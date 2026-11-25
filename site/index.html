@@ -9,10 +9,10 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#A8381C">
+<meta name="theme-color" content="#1D4F8F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=LXGW+WenKai+TC:wght@400&family=Courier+Prime:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Barlow+Condensed:wght@600;700&display=swap">
 <style>
 /* ================= 設計代幣（語意化，亮暗成對設計） ================= */
 :root{
@@ -360,6 +360,169 @@ textarea.code{min-height:96px;font-family:var(--font-mono);font-size:var(--fs-1)
 .news{align-items:flex-start}
 .news .news-body{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
 .news b{font-size:var(--fs-2)}
+
+/* ==========================================================================
+   v2 視覺：「月台與車票」
+   概念：台鐵月台 × 名片式硬卡車票。整頁安靜（月台灰、號誌藍），
+   只有「抽到的那張車票」是主角：淡綠票卡、出發站 → 目的地大字、紫色日期戳。
+   唯一裝飾母題：月台邊緣的黃色警示線，只用在刊頭與分頁指示。
+   ========================================================================== */
+:root{
+  --bg:#E9EDE8; --surface:#FBFCFA; --surface-2:#DEE4DD;
+  --fg:#18222E; --fg-muted:#47535F; --border:#C8D0C8; --border-strong:#76837F;
+  --primary:#1D4F8F; --on-primary:#FFFFFF; --primary-soft:#DCE6F3; --primary-deep:#12355F;
+  --secondary:#1F6249; --on-secondary:#FFFFFF; --secondary-soft:#D8E9E0;
+  --platform:#F0BE2C; --on-platform:#18222E;
+  --ticket:#D9E7CC; --ticket-line:#B7CBA6; --ticket-ink:#18222E; --stamp:#5D3F95;
+  --star:#8A570A; --heart:#B8322A; --focus:#1D4F8F;
+  --inverse-bg:#18222E; --inverse-fg:#FBFCFA; --inverse-accent:#F0BE2C;
+  --shadow-1:0 1px 0 rgba(24,34,46,.06);
+  --shadow-2:0 1px 0 rgba(24,34,46,.08),0 10px 24px -16px rgba(24,34,46,.45);
+  --grain:none;
+  --font-display:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-hand:var(--font-body);
+  --font-num:"Barlow Condensed","Arial Narrow","Noto Sans TC",sans-serif;
+  --font-mono:var(--font-num);
+  --r-sm:8px; --r-md:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F141A; --surface:#171E26; --surface-2:#212A34;
+  --fg:#E5EBEE; --fg-muted:#A6B2BC; --border:#2C3743; --border-strong:#5E6D7A;
+  --primary:#8DB3E6; --on-primary:#0F141A; --primary-soft:#1B2A3E; --primary-deep:#5F8DCC;
+  --secondary:#79C3A1; --on-secondary:#0F141A; --secondary-soft:#16302A;
+  --platform:#E2B32A; --on-platform:#0F141A;
+  --ticket:#C3D3B6; --ticket-line:#A3B794; --ticket-ink:#18222E; --stamp:#5D3F95;
+  --star:#E9B65C; --heart:#F2877C; --focus:#8DB3E6;
+  --inverse-bg:#E5EBEE; --inverse-fg:#0F141A; --inverse-accent:#1D4F8F;
+  --shadow-1:none; --shadow-2:0 12px 28px -14px rgba(0,0,0,.8);
+  --grain:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F141A; --surface:#171E26; --surface-2:#212A34;
+  --fg:#E5EBEE; --fg-muted:#A6B2BC; --border:#2C3743; --border-strong:#5E6D7A;
+  --primary:#8DB3E6; --on-primary:#0F141A; --primary-soft:#1B2A3E; --primary-deep:#5F8DCC;
+  --secondary:#79C3A1; --on-secondary:#0F141A; --secondary-soft:#16302A;
+  --platform:#E2B32A; --on-platform:#0F141A;
+  --ticket:#C3D3B6; --ticket-line:#A3B794; --ticket-ink:#18222E; --stamp:#5D3F95;
+  --star:#E9B65C; --heart:#F2877C; --focus:#8DB3E6;
+  --inverse-bg:#E5EBEE; --inverse-fg:#0F141A; --inverse-accent:#1D4F8F;
+  --shadow-1:none; --shadow-2:0 12px 28px -14px rgba(0,0,0,.8);
+  --grain:none; color-scheme:dark}
+
+body{background:var(--bg)}
+h1,h2,h3{font-family:var(--font-display)}
+
+/* ---------- 刊頭：站名牌 ---------- */
+.mast{border:0;padding:0;gap:0;border-radius:var(--r-md);overflow:hidden;background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-2)}
+.mast .eyebrow{order:2;font-family:var(--font-body);font-size:var(--fs-1);letter-spacing:0;color:inherit;opacity:.88;padding:0 var(--sp-5) var(--sp-4)}
+.mast-main{order:1;padding:var(--sp-5) var(--sp-5) var(--sp-2);align-items:flex-end}
+h1{font-weight:900;font-size:clamp(2rem,9vw,2.75rem);letter-spacing:.04em;line-height:1.1;color:inherit}
+.hanko{width:56px;height:56px;border-radius:50%;border:2px solid currentColor;color:var(--platform);box-shadow:none;transform:rotate(-10deg);font-size:var(--fs-1);font-weight:900;line-height:1.1;letter-spacing:.1em}
+#headNote{order:3;margin:0;padding:var(--sp-2) var(--sp-5);background:var(--platform);color:var(--on-platform);font-weight:500;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .mast{background:var(--surface);color:var(--fg);border:1px solid var(--border)}}
+:root[data-theme="dark"] .mast{background:var(--surface);color:var(--fg);border:1px solid var(--border)}
+
+/* ---------- 分頁 ---------- */
+.nav button[aria-current="page"]{color:var(--primary)}
+.nav button[aria-current="page"]::before{background:var(--platform);height:4px}
+@media (min-width:768px){.nav{background:var(--bg);border-bottom-color:var(--border-strong)}}
+@media (min-width:1024px){
+  .nav{background:none}
+  .nav button[aria-current="page"]{background:var(--surface);box-shadow:var(--shadow-1);color:var(--fg)}
+  .nav button[aria-current="page"]::before{width:4px;height:auto}
+}
+/* 抽籤以外的分頁：刊頭縮小，把空間留給內容 */
+.app:has([data-panel="draw"][hidden]) .mast .eyebrow,.app:has([data-panel="draw"][hidden]) #headNote,.app:has([data-panel="draw"][hidden]) .hanko{display:none}
+.app:has([data-panel="draw"][hidden]) .mast-main{padding:var(--sp-3) var(--sp-5)}
+.app:has([data-panel="draw"][hidden]) h1{font-size:var(--fs-5)}
+
+/* ---------- 標題與卡片：安靜 ---------- */
+.sec-h{font-size:var(--fs-4);font-weight:900;letter-spacing:.02em;gap:var(--sp-2)}
+.sec-h::after{display:none}
+.sec-h .i{color:var(--primary)}
+.card{border-radius:var(--r-md);box-shadow:var(--shadow-1)}
+.lead{line-height:1.7;max-width:38em}
+
+/* ---------- 按鈕 ---------- */
+.btn{border-radius:var(--r-sm)}
+.btn-primary{background:var(--primary);border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-deep);border-color:var(--primary-deep)}
+/* 主要的「抽一張車票」：售票機按鍵，有實體的厚度 */
+.btn-xl{min-height:64px;border-radius:var(--r-md);letter-spacing:.18em;text-indent:.18em;font-weight:900;font-size:var(--fs-5);
+  box-shadow:0 5px 0 var(--primary-deep),0 14px 24px -14px rgba(18,53,95,.7);margin-bottom:5px;transition:transform 90ms ease,box-shadow 90ms ease}
+.btn-xl:hover{background:var(--primary)}
+.btn-xl:active{transform:translateY(4px);box-shadow:0 1px 0 var(--primary-deep),0 4px 10px -8px rgba(18,53,95,.7)}
+
+/* ---------- 選項膠囊 ---------- */
+.chip{border-color:var(--border-strong)}
+.chip[aria-pressed="true"],label.chip:has(input:checked){background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+
+/* ---------- 抽籤條件 ---------- */
+.cond{border-radius:var(--r-md);background:var(--surface)}
+.hint{font-family:var(--font-body);font-size:var(--fs-1);font-weight:500;color:var(--primary);padding-left:var(--sp-3);border-left:3px solid var(--platform)}
+
+/* ---------- 主角：車票 ---------- */
+.ticket{background:var(--ticket);color:var(--ticket-ink);border:0;border-radius:10px;box-shadow:var(--shadow-2);
+  background-image:repeating-linear-gradient(135deg,transparent 0 9px,rgba(255,255,255,.22) 9px 10px),repeating-linear-gradient(45deg,transparent 0 9px,rgba(24,34,46,.035) 9px 10px)}
+.ticket .t-body{color:var(--ticket-ink)}
+.stub{display:block;background:transparent;border-bottom:2px dashed var(--ticket-line);padding:var(--sp-4) var(--sp-4) var(--sp-3)}
+.stub::before,.stub::after{background:var(--bg);width:20px;height:20px;bottom:-11px}
+.stub::before{left:-11px}.stub::after{right:-11px}
+.route{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;color:var(--ticket-ink)}
+.route .rt{display:flex;flex-direction:column;line-height:1.05;min-width:0}
+.route .rt small{font-size:var(--fs-0);font-weight:500;color:#3E4A44;letter-spacing:.04em;margin-bottom:4px}
+.route .rt b{font-family:var(--font-display);font-weight:900;font-size:clamp(1.6rem,7.5vw,2.25rem);letter-spacing:.02em;overflow-wrap:anywhere}
+.route .rt-from b{font-size:clamp(1.15rem,5vw,1.5rem);font-weight:700}
+.route .arr{flex:none;width:36px;height:2px;background:var(--ticket-ink);position:relative;margin-top:16px}
+.route .arr::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left:8px solid var(--ticket-ink);border-right:0}
+.stub-meta{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3);margin-top:var(--sp-3)}
+.stub-t{font-family:var(--font-body);font-weight:700;font-size:var(--fs-1);letter-spacing:.06em;color:#3E4A44}
+.stub-no{font-family:var(--font-num);font-weight:700;font-size:var(--fs-3);letter-spacing:.06em;color:var(--stamp);border:2px solid var(--stamp);border-radius:999px;padding:0 12px;transform:rotate(-4deg);opacity:.92}
+.t-legend{color:#3E4A44}
+.t-row{border-bottom:1px solid var(--ticket-line)}
+.t-lb{color:#3E4A44}
+.t-sub{font-family:var(--font-body);color:#3E4A44}
+.lock-tag{color:var(--ticket-ink)}
+.ticket .icon-btn{background:rgba(255,255,255,.55);border-color:rgba(24,34,46,.18);color:var(--ticket-ink)}
+.ticket .icon-btn:hover{background:rgba(255,255,255,.85)}
+.ticket .icon-btn[aria-pressed="true"],.ticket .icon-btn[aria-expanded="true"]{background:var(--ticket-ink);border-color:var(--ticket-ink);color:#fff}
+.ticket .mk-btn[data-k="s"][aria-pressed="true"]{background:#fff;border-color:#8A570A;color:#8A570A}
+.ticket .mk-btn[data-k="h"][aria-pressed="true"]{background:#fff;border-color:#B8322A;color:#B8322A}
+.ticket .select{background-color:#fff;color:var(--ticket-ink)}
+.spots{padding-top:var(--sp-4)}
+.spot{background:#FBFCFA;color:var(--ticket-ink);border:0;border-radius:var(--r-sm);box-shadow:0 1px 0 rgba(24,34,46,.12)}
+.spot-kind{font-family:var(--font-body);font-weight:700;font-size:var(--fs-0);letter-spacing:.06em;color:#fff;background:var(--primary);border-radius:4px;padding:1px 8px}
+.spot-note{color:#47535F}
+.spot .tags li{background:#fff;color:#47535F;border-color:#B9C2BB}
+.spot .tags .ok{color:#1F6249;border-color:#1F6249}
+.spot .tags .hot{color:#A33A16;border-color:#A33A16}
+.spot .tags .warn{color:#B3261E;border-color:#B3261E}
+.spot .link{color:#1D4F8F}
+.t-foot .btn-ghost{color:var(--ticket-ink)}
+.t-foot .btn-ghost:hover{background:rgba(255,255,255,.5)}
+.ticket .empty{border-color:var(--ticket-line);color:var(--ticket-ink)}
+.ticket.drawn{animation:ticketPrint 420ms cubic-bezier(.2,.8,.2,1)}
+@keyframes ticketPrint{from{clip-path:inset(0 0 100% 0);transform:translateY(-14px)}to{clip-path:inset(0 0 0 0);transform:none}}
+
+/* ---------- 投票、紀錄 ---------- */
+.vcard.is-lead{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.crown{background:var(--platform);color:var(--on-platform)}
+.cnt,.ana-row .v{font-family:var(--font-num);font-size:var(--fs-2);font-weight:600}
+.insight{font-family:var(--font-body);font-size:var(--fs-1);font-weight:500;color:var(--fg);padding-left:var(--sp-3);border-left:3px solid var(--platform)}
+.ana-row.top .b i{background:var(--primary)}
+.ana-row .b i{background:var(--secondary)}
+.st.plan{color:var(--primary)}
+
+/* ---------- 其他 ---------- */
+.empty p{font-family:var(--font-body);font-size:var(--fs-1)}
+.notice{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--platform)}
+.notice .i{color:var(--fg)}
+textarea.out{background:var(--surface);line-height:1.8;padding:var(--sp-3) var(--sp-4)}
+.colophon{border-top:1px solid var(--border-strong);font-family:var(--font-body)}
+.boot{font-family:var(--font-body)}
+.share-in{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.stars .icon-btn.on{color:var(--star)}
+@media (prefers-reduced-motion: reduce){.ticket.drawn{animation:none}}
 </style>
 </head>
 <body class="booting">
