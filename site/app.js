@@ -378,6 +378,13 @@ function renderDraw(anim){
   $("out").value=buildOut(S.out);
   if(!$("goDate").value)$("goDate").value=nextSat();
 }
+/* 記住使用者最後是用鍵盤還是手指／滑鼠操作。
+   手機上用程式把焦點放回下拉選單，iOS／Android 會把選單再打開一次，
+   所以只有用鍵盤操作時才把焦點還給選單。 */
+let lastInput="pointer";
+document.addEventListener("pointerdown",()=>{lastInput="pointer"},true);
+document.addEventListener("touchstart",()=>{lastInput="pointer"},{capture:true,passive:true});
+document.addEventListener("keydown",e=>{if(!["Shift","Control","Alt","Meta"].includes(e.key))lastInput="key"},true);
 /* 只更新車票的一部分時：讓變動的那一列和景點區淡淡亮一下，不整張重畫動畫 */
 function flashChanged(key){
   if(RM())return;
@@ -394,9 +401,9 @@ $("ticket").addEventListener("click",e=>rf(()=>{
   if(e.target.closest("#reSpot")){const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(false);flashChanged(null);return}
   const r=e.target.closest("[data-re]");if(r){const k=r.dataset.re;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};S.lock[k]=false;if(k==="area")S.area=null;draw();S.lock=keep;save();renderDraw(false);flashChanged(k);return}
   const l=e.target.closest("[data-lock]");if(l){S.lock[l.dataset.lock]=!S.lock[l.dataset.lock];save();renderDraw(false);return}
-  const p=e.target.closest("[data-pick]");if(p){pickOpen=pickOpen===p.dataset.pick?null:p.dataset.pick;renderDraw(false);return pickOpen?`#pick-${pickOpen}`:undefined}
+  const p=e.target.closest("[data-pick]");if(p){pickOpen=pickOpen===p.dataset.pick?null:p.dataset.pick;renderDraw(false);return pickOpen&&lastInput==="key"?`#pick-${pickOpen}`:undefined}
 }));
-$("ticket").addEventListener("change",e=>{const s=e.target.closest("[data-sel]");if(!s)return;const k=s.dataset.sel;S[k]=+s.value;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(false);flashChanged(k);const again=document.querySelector(`[data-sel="${k}"]`);if(again)again.focus({preventScroll:true})});
+$("ticket").addEventListener("change",e=>{const s=e.target.closest("[data-sel]");if(!s)return;const k=s.dataset.sel;S[k]=+s.value;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(false);flashChanged(k);if(lastInput==="key"){const again=document.querySelector(`[data-sel="${k}"]`);if(again)again.focus({preventScroll:true})}});
 $("outChips").addEventListener("click",e=>rf(()=>{const b=e.target.closest("[data-out]");if(!b)return;S.out=+b.dataset.out;save();renderDraw(false)}));
 function copyText(t,ok,fail){try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}}
 $("copyOut").onclick=()=>copyText($("out").value,()=>toast("已複製到剪貼簿。"),()=>{$("out").focus();$("out").select();toast("無法自動複製，已幫你選取全文，請手動複製。")});
