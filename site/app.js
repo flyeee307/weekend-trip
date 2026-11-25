@@ -378,17 +378,25 @@ function renderDraw(anim){
   $("out").value=buildOut(S.out);
   if(!$("goDate").value)$("goDate").value=nextSat();
 }
+/* 只更新車票的一部分時：讓變動的那一列和景點區淡淡亮一下，不整張重畫動畫 */
+function flashChanged(key){
+  if(RM())return;
+  const targets=[];
+  if(key){const b=document.querySelector(`#ticket [data-re="${key}"]`);const row=b&&b.closest(".t-row");if(row)targets.push(row)}
+  const sp=document.querySelector("#ticket .spots");if(sp)targets.push(sp);
+  targets.forEach(el=>{try{el.animate([{backgroundColor:"rgba(240,190,44,.38)"},{backgroundColor:"rgba(240,190,44,0)"}],{duration:650,easing:"ease-out"})}catch(e){}});
+}
 $("drawBtn").onclick=()=>{draw();pickOpen=null;save();renderDraw(true)};
 function toggleMark(id,k){const m={...mk(id)};m[k]=!m[k];if(!m.s&&!m.h)delete S.marks[id];else S.marks[id]={...(m.s?{s:true}:{}),...(m.h?{h:true}:{})};save()}
 $("ticket").addEventListener("click",e=>rf(()=>{
   if(e.target.closest("#unlockAll")){S.lock={area:false,theme:false,plan:false};draw();save();renderDraw(true);return "#drawBtn"}
   const mb=e.target.closest("[data-mk]");if(mb){toggleMark(mb.dataset.mk,mb.dataset.k);renderDraw(false);return}
-  if(e.target.closest("#reSpot")){const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(true);return}
-  const r=e.target.closest("[data-re]");if(r){const k=r.dataset.re;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};S.lock[k]=false;if(k==="area")S.area=null;draw();S.lock=keep;save();renderDraw(true);return}
+  if(e.target.closest("#reSpot")){const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(false);flashChanged(null);return}
+  const r=e.target.closest("[data-re]");if(r){const k=r.dataset.re;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};S.lock[k]=false;if(k==="area")S.area=null;draw();S.lock=keep;save();renderDraw(false);flashChanged(k);return}
   const l=e.target.closest("[data-lock]");if(l){S.lock[l.dataset.lock]=!S.lock[l.dataset.lock];save();renderDraw(false);return}
   const p=e.target.closest("[data-pick]");if(p){pickOpen=pickOpen===p.dataset.pick?null:p.dataset.pick;renderDraw(false);return pickOpen?`#pick-${pickOpen}`:undefined}
 }));
-$("ticket").addEventListener("change",e=>{const s=e.target.closest("[data-sel]");if(!s)return;const k=s.dataset.sel;S[k]=+s.value;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(true);const again=document.querySelector(`[data-sel="${k}"]`);if(again)again.focus()});
+$("ticket").addEventListener("change",e=>{const s=e.target.closest("[data-sel]");if(!s)return;const k=s.dataset.sel;S[k]=+s.value;const keep={...S.lock};S.lock={area:true,theme:true,plan:true};draw();S.lock=keep;save();renderDraw(false);flashChanged(k);const again=document.querySelector(`[data-sel="${k}"]`);if(again)again.focus({preventScroll:true})});
 $("outChips").addEventListener("click",e=>rf(()=>{const b=e.target.closest("[data-out]");if(!b)return;S.out=+b.dataset.out;save();renderDraw(false)}));
 function copyText(t,ok,fail){try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}}
 $("copyOut").onclick=()=>copyText($("out").value,()=>toast("已複製到剪貼簿。"),()=>{$("out").focus();$("out").select();toast("無法自動複製，已幫你選取全文，請手動複製。")});
