@@ -1,8 +1,16 @@
 {
   "$說明": "週末小旅行籤的景點資料。修改規則請看 README.md。id 永遠不刪不改；景點停業請把 status 改成 closed。",
-  "dataVersion": "2026.11",
-  "feedbackUrl": "",
+  "dataVersion": "2026.11.2",
+  "feedbackUrl": "https://docs.google.com/forms/d/e/1FAIpQLScROcNiz_6IPPsN-NchHyPAlk9oglXQeqje5WeecgeysBcMEw/viewform?usp=pp_url&entry.1941466319={name}&entry.490804294={id}",
   "changelog": [
+    {
+      "version": "2026.11.2",
+      "date": "2026-11-25",
+      "summary": "新增「回報資訊有誤」功能：看到景點資訊過時，點景點旁的連結就能告訴我們。",
+      "added": [],
+      "updated": [],
+      "paused": []
+    },
     {
       "version": "2026.11",
       "date": "2026-11-25",

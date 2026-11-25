@@ -60,7 +60,9 @@ p:["比賽誰先跑到下一棵樹","數數看今天踩了幾次水","找到一�
 r:["找到一個會發出聲音的展品","用三個字形容這個地方","拍一張你覺得最酷的照片"]
 };
 const LATEST=(DATA.changelog&&DATA.changelog[0])||{version:DATA.dataVersion,added:[],updated:[],paused:[]};
-const NEW_LABEL=`${String(LATEST.version||"").replace(".","/")} 新增`;
+/* 「最新熱點」＝最近一次更新往前 90 天內，所有更新紀錄 added 裡的景點 */
+const NEW_DAYS=90;
+const NEW_LABEL="最新熱點";
 const STALE_DAYS=120;
 const KEY="weekend-trip-v1";
 const WEATHER=[{id:"any",name:"不限"},{id:"hot",name:"天氣炎熱"},{id:"rain",name:"可能下雨"},{id:"cool",name:"涼爽好天氣"}];
@@ -145,7 +147,7 @@ function isFresh(p){if(!p.verified)return false;const t=Date.parse(p.verified);r
 function verifiedHTML(p,tag){if(p.mine||p.edited||!p.verified)return "";const f=isFresh(p);return `<${tag} class="${tag==="span"?"badge ":""}${f?"ok":""}">${I("shield")}${f?"已查證 "+ym(p.verified):"查證於 "+ym(p.verified)+"・資料較舊"}</${tag}>`}
 const isOpen=p=>!p.status||p.status==="open";
 function drawPlaces(){return allPlaces().filter(p=>!p.hidden&&isOpen(p))}
-const NEWSET=new Set(LATEST.added||[]);
+const NEWSET=new Set((DATA.changelog||[]).filter(c=>{const a=Date.parse(LATEST.date),b=Date.parse(c.date);return Number.isFinite(a)&&Number.isFinite(b)&&(a-b)/864e5<=NEW_DAYS}).flatMap(c=>Array.isArray(c.added)?c.added:[]));
 function statusHTML(p,tag){if(isOpen(p))return "";const st=p.status;return `<${tag} class="badge warn">${I("alert")}${st==="closed"?"已停業，不會被抽到":"暫停開放，不會被抽到"}</${tag}>`}
 function mk(id){return (S.marks&&S.marks[id])||{}}
 function marksHTML(id){const m=mk(id);return (m.s?'<span class="ic ic-s" aria-label="星星">★</span>':"")+(m.h?'<span class="ic ic-h" aria-label="愛心">♥</span>':"")}
@@ -552,7 +554,7 @@ function renderSpots(){
   const all=allPlaces();const live=all.filter(p=>!p.hidden);
   const ns=Object.values(S.marks).filter(m=>m.s).length,nh=Object.values(S.marks).filter(m=>m.h).length;
   const nPause=live.filter(p=>!isOpen(p)).length;
-  $("spotSum").textContent=`共 ${live.length} 個景點（資料版本 ${DATA.dataVersion}），${live.filter(isFresh).length} 個在近 4 個月內上網查證過，${live.filter(p=>NEWSET.has(p.id)).length} 個是 ${NEW_LABEL}的熱點${nPause?`，${nPause} 個暫停開放`:""}。我新增 ${S.custom.length}・修改 ${Object.keys(S.edits).length}・刪除 ${S.hidden.length}・星星 ${ns}・愛心 ${nh}・去過 ${S.visited.length}`;
+  $("spotSum").textContent=`共 ${live.length} 個景點（資料版本 ${DATA.dataVersion}），${live.filter(isFresh).length} 個在近 4 個月內上網查證過，${live.filter(p=>NEWSET.has(p.id)).length} 個是近期新增的最新熱點${nPause?`，${nPause} 個暫停開放`:""}。我新增 ${S.custom.length}・修改 ${Object.keys(S.edits).length}・刪除 ${S.hidden.length}・星星 ${ns}・愛心 ${nh}・去過 ${S.visited.length}`;
   $("spotF").value=spotF;$("areaF").value=areaF;
   const q=$("spotQ").value.trim().toLowerCase();
   const list=all.filter(p=>{
