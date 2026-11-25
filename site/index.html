@@ -345,6 +345,14 @@ textarea.code{min-height:96px;font-family:var(--font-mono);font-size:var(--fs-1)
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
+/* ================= 分享景點 ================= */
+.pick-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pick-list li{border-bottom:1px dotted var(--border-strong)}
+.pick-list li:last-child{border-bottom:0}
+.pick-list .check{align-items:flex-start;padding-block:var(--sp-2)}
+.pick-list .check input{margin-top:3px}
+.pick-list .check input:disabled+span{opacity:.6}
+.share-in{border-color:var(--secondary);box-shadow:inset 0 0 0 1px var(--secondary),var(--shadow-1)}
 /* ================= 載入中、更新卡片 ================= */
 .boot{display:none}
 .booting .boot{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-3);padding:var(--sp-6) 0;font-family:var(--font-hand);font-size:var(--fs-3);color:var(--fg-muted)}
@@ -473,6 +481,12 @@ textarea.code{min-height:96px;font-family:var(--font-mono);font-size:var(--fs-1)
 
   <!-- ============ 景點庫 ============ -->
   <div class="panel" data-panel="spots" aria-labelledby="h-spots" hidden>
+    <section id="inSec" class="card stack share-in" aria-labelledby="inTitle" hidden>
+      <h2 class="sec-h" id="inTitle" tabindex="-1"></h2>
+      <p class="lead" id="inLead"></p>
+      <ul class="pick-list" id="inList"></ul>
+      <div class="row"><button type="button" class="btn btn-primary" id="inAdd"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg><span id="inAddT">加入景點</span></button><button type="button" class="btn btn-ghost" id="inCancel">先不要</button></div>
+    </section>
     <section>
       <h2 class="sec-h" id="h-spots" tabindex="-1"><svg class="i" aria-hidden="true"><use href="#i-map"/></svg>景點庫</h2>
       <p class="lead" id="spotSum"></p>
@@ -484,6 +498,21 @@ textarea.code{min-height:96px;font-family:var(--font-mono);font-size:var(--fs-1)
       <p class="status" id="spotCount" role="status"></p>
       <ul class="spot-list" id="placeList"></ul>
       <div class="row"><button type="button" class="btn" id="moreSpots" hidden>顯示更多</button></div>
+    </section>
+    <section id="shareSec" aria-labelledby="h-share">
+      <h2 class="sec-h" id="h-share"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg>分享我的景點</h2>
+      <p class="lead">把你新增的景點做成一個連結，傳給朋友或貼到社群。對方點開後可以挑選加進自己的景點庫，不會動到他原本的資料。連結裡只有景點，不含家人名字、旅行紀錄等任何個人資料。</p>
+      <p class="empty" id="shareEmpty" hidden>你還沒有新增自己的景點。在下方「新增景點」加入喜歡的地方後，就能分享給朋友。</p>
+      <div class="card stack" id="shareBox">
+        <div class="row" style="justify-content:space-between"><span class="status" id="shareCount"></span><button type="button" class="btn btn-ghost" id="shareAll">全選／全不選</button></div>
+        <ul class="pick-list" id="shareList"></ul>
+        <div class="field"><label class="label" for="shareFrom">你的暱稱（選填）</label><input class="input" id="shareFrom" maxlength="12" autocomplete="off" aria-describedby="shareFromHelp"><p class="help" id="shareFromHelp">對方會看到「某某分享了 N 個景點給你」。不想具名就留空。</p></div>
+        <div class="row"><button type="button" class="btn btn-primary" id="shareBtn"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>產生並複製分享連結</button></div>
+        <div class="stack" id="shareOut" hidden>
+          <div class="field"><label class="label" for="shareUrl">分享連結</label><textarea class="code" id="shareUrl" readonly></textarea></div>
+          <div class="row"><button type="button" class="btn" id="shareCopy"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>再複製一次</button><button type="button" class="btn btn-secondary" id="shareNative" hidden><svg class="i" aria-hidden="true"><use href="#i-external"/></svg>傳到 LINE 或其他 App</button></div>
+        </div>
+      </div>
     </section>
     <section id="formSec" aria-labelledby="formH">
       <h2 class="sec-h" id="formH" tabindex="-1"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg><span id="formHT">新增景點</span></h2>

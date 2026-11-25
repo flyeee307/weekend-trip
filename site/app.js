@@ -98,7 +98,7 @@ function cleanData(d){
   const custom=(Array.isArray(d&&d.custom)?d.custom:[]).slice(0,200).map(c=>{
     const id=okId(c&&c.id);const t=(Array.isArray(c&&c.t)?c.t:[]).filter(x=>THEMES.some(th=>th.id===x));
     if(!id||!/^u/.test(id)||!t.length||!AREAS.some(a=>a.name===(c&&c.area)))return null;
-    return {id,name:str(c.name,24).trim()||"未命名地點",area:c.area,t,dur:int(c.dur,1,3,1),walk:int(c.walk,1,3,1),cost:int(c.cost,0,3,1),kid:!!c.kid,note:str(c.note,60),season:SEASON_RE.test(c.season||"")?c.season:"",fl:""};
+    return {id,name:str(c.name,24).trim()||"未命名地點",area:c.area,t,dur:int(c.dur,1,3,1),walk:int(c.walk,1,3,1),cost:int(c.cost,0,3,1),kid:!!c.kid,note:str(c.note,60),season:SEASON_RE.test(c.season||"")?c.season:"",fl:"",...(c.shared?{shared:true,from:str(c.from,12).trim()}:{})};
   }).filter(Boolean);
   const placeIds=new Set(BUILT.map(p=>p.id).concat(custom.map(c=>c.id)));
   const memIds=new Set(members.map(m=>m.id));
@@ -532,7 +532,7 @@ $("transChips").addEventListener("click",e=>rf(()=>{const b=e.target.closest("[d
 
 /* ---------- 景點庫 ---------- */
 let spotF="all",areaF="all",spotLimit=40,editId=null,nameTouched=false,formInit=false;
-const SPOT_F=[["all","全部景點"],["s","有星星的"],["h","有愛心的"],["v","去過的"],["nv","還沒去的"],["mine","我新增的"],["new","最新熱點"],["ok","近期查證過的"],["pause","暫停開放的"],["ed","我修改過的"],["gone","已刪除的"]];
+const SPOT_F=[["all","全部景點"],["s","有星星的"],["h","有愛心的"],["v","去過的"],["nv","還沒去的"],["mine","我新增的"],["shared","朋友分享的"],["new","最新熱點"],["ok","近期查證過的"],["pause","暫停開放的"],["ed","我修改過的"],["gone","已刪除的"]];
 const FORM_NOTE='把你喜歡的地方加進景點庫，抽籤時會一起出現。標 <span class="req" aria-hidden="true">*</span> 的欄位必填。';
 function initSpotsForm(){
   if(formInit)return;formInit=true;
@@ -544,13 +544,13 @@ function initSpotsForm(){
 }
 function spotItem(p){
   const m=mk(p.id),v=S.visited.includes(p.id);
-  const badges=(v?`<span class="badge ok">${I("check")}去過</span>`:"")+(p.mine?'<span class="badge e">我新增的</span>':"")+(NEWSET.has(p.id)?`<span class="badge hot">${NEW_LABEL}</span>`:"")+statusHTML(p,"span")+(p.edited?'<span class="badge e">已修改</span>':"")+(p.edited&&p.stale?`<span class="badge warn">${I("info")}官方資料有更新</span>`:"")+verifiedHTML(p,"span")+(inSeason(p)?'<span class="badge hot">正當季</span>':"");
+  const badges=(v?`<span class="badge ok">${I("check")}去過</span>`:"")+(p.mine?(p.shared?`<span class="badge e">${I("users")}${p.from?esc(p.from)+" 分享":"朋友分享"}</span>`:'<span class="badge e">我新增的</span>'):"")+(NEWSET.has(p.id)?`<span class="badge hot">${NEW_LABEL}</span>`:"")+statusHTML(p,"span")+(p.edited?'<span class="badge e">已修改</span>':"")+(p.edited&&p.stale?`<span class="badge warn">${I("info")}官方資料有更新</span>`:"")+verifiedHTML(p,"span")+(inSeason(p)?'<span class="badge hot">正當季</span>':"");
   const ops=p.hidden?`<button type="button" class="btn" data-restore="${p.id}">${I("undo")}還原這個景點</button>`
     :`${markBtns(p)}<button type="button" class="btn vis" data-vis="${p.id}" aria-pressed="${v}">${v?I("check"):""}去過</button><a class="icon-btn" href="${mapURL(p)}" target="_blank" rel="noopener" aria-label="在 Google 地圖上看${esc(p.name)}（開新視窗）" title="在地圖上看">${I("map")}</a><details class="more push"><summary class="icon-btn" aria-label="更多操作：${esc(p.name)}" title="更多操作">${I("more")}</summary><div class="menu"><button type="button" class="btn" data-edit="${p.id}">${I("edit")}編輯資料</button>${p.edited?`<button type="button" class="btn" data-reset="${p.id}">${I("undo")}${p.stale?"改用官方最新資料":"還原原始資料"}</button>`:""}${fbLink(p,"btn")}<div class="sep" role="separator"></div><button type="button" class="btn danger" data-del="${p.id}">${I("trash")}刪除這個景點</button></div></details>`;
   return `<li class="si card ${p.hidden?"gone":""}"><div class="si-head">${marksHTML(p.id)}<h3>${esc(p.name)}</h3>${badges}</div><p class="si-meta">${esc(p.area)}・${p.t.map(x=>TH(x).name).join("、")}・步行${WALK[p.walk]}・${DUR[p.dur]}${p.season?"・"+seasonLabel(p):""}</p>${p.note?`<p class="si-meta">${esc(p.note)}</p>`:""}<div class="si-ops">${ops}</div></li>`;
 }
 function renderSpots(){
-  initSpotsForm();
+  initSpotsForm();renderShare();
   const all=allPlaces();const live=all.filter(p=>!p.hidden);
   const ns=Object.values(S.marks).filter(m=>m.s).length,nh=Object.values(S.marks).filter(m=>m.h).length;
   const nPause=live.filter(p=>!isOpen(p)).length;
@@ -561,7 +561,7 @@ function renderSpots(){
     if(spotF==="gone")return p.hidden; if(p.hidden)return false;
     if(spotF==="s"&&!mk(p.id).s)return false; if(spotF==="h"&&!mk(p.id).h)return false;
     if(spotF==="v"&&!S.visited.includes(p.id))return false; if(spotF==="nv"&&S.visited.includes(p.id))return false;
-    if(spotF==="mine"&&!p.mine)return false; if(spotF==="ok"&&!isFresh(p))return false; if(spotF==="ed"&&!p.edited)return false; if(spotF==="new"&&!NEWSET.has(p.id))return false; if(spotF==="pause"&&isOpen(p))return false;
+    if(spotF==="mine"&&(!p.mine||p.shared))return false; if(spotF==="shared"&&!p.shared)return false; if(spotF==="ok"&&!isFresh(p))return false; if(spotF==="ed"&&!p.edited)return false; if(spotF==="new"&&!NEWSET.has(p.id))return false; if(spotF==="pause"&&isOpen(p))return false;
     if(areaF!=="all"&&p.area!==areaF)return false;
     if(q&&!(p.name+p.area+(p.note||"")).toLowerCase().includes(q))return false;
     return true;
@@ -713,6 +713,81 @@ $("importBtn").onclick=()=>{
   toast("已整份取代成備份碼的資料。",{action:"復原",onAction:()=>restore(sn,"已復原成匯入前的資料。")});
 };
 
+
+/* ---------- 景點分享碼：只含景點，不含任何家人資料 ---------- */
+const SHARE_MAX=30;
+const b64u=s=>b64e(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const b64ud=s=>{s=String(s).replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return b64d(s)};
+let shareSel=null,incoming=null;
+function myShareable(){return S.custom}
+function renderShare(){
+  const L=myShareable();
+  if(shareSel===null)shareSel=new Set(L.map(c=>c.id));
+  [...shareSel].forEach(id=>{if(!L.some(c=>c.id===id))shareSel.delete(id)});
+  $("shareEmpty").hidden=!!L.length;$("shareBox").hidden=!L.length;
+  $("shareList").innerHTML=L.map(c=>`<li><label class="check"><input type="checkbox" data-share="${c.id}" ${shareSel.has(c.id)?"checked":""}> <span><b>${esc(c.name)}</b><span class="help">　${esc(c.area)}・${c.t.map(x=>TH(x).name).join("、")}${c.shared?"・朋友分享":""}</span></span></label></li>`).join("");
+  const n=shareSel.size;$("shareBtn").disabled=!n||n>SHARE_MAX;
+  $("shareCount").textContent=n>SHARE_MAX?`一次最多分享 ${SHARE_MAX} 個，目前選了 ${n} 個。`:`已選 ${n} 個景點`;
+}
+$("shareList").addEventListener("change",e=>{const c=e.target.closest("[data-share]");if(!c)return;c.checked?shareSel.add(c.dataset.share):shareSel.delete(c.dataset.share);$("shareOut").hidden=true;renderShare()});
+$("shareAll").onclick=()=>{const L=myShareable();shareSel=new Set(shareSel.size===L.length?[]:L.map(c=>c.id));$("shareOut").hidden=true;renderShare()};
+$("shareBtn").onclick=()=>{
+  const L=S.custom.filter(c=>shareSel.has(c.id)).slice(0,SHARE_MAX);if(!L.length)return;
+  const from=$("shareFrom").value.trim().slice(0,12);
+  const payload={v:1,f:from,p:L.map(c=>[c.name,c.area,c.t.join(""),c.walk,c.dur,c.cost,c.kid?1:0,c.note||"",c.season||""])};
+  const url=location.origin+location.pathname+"#share="+b64u(JSON.stringify(payload));
+  $("shareUrl").value=url;$("shareOut").hidden=false;
+  $("shareNative").hidden=!(navigator.share);
+  copyText(url,()=>toast(`已複製分享連結（${L.length} 個景點），貼到 LINE 或社群就能分享。`),()=>{$("shareUrl").focus();$("shareUrl").select();toast("無法自動複製，已幫你選取連結，請手動複製。")});
+};
+$("shareCopy").onclick=()=>copyText($("shareUrl").value,()=>toast("已複製分享連結。"),()=>{$("shareUrl").focus();$("shareUrl").select()});
+$("shareNative").onclick=()=>{try{navigator.share({title:"週末小旅行籤：分享景點給你",text:"我整理了幾個週末好去處，點連結就能加進你的景點庫：",url:$("shareUrl").value}).catch(()=>{})}catch(e){}};
+
+function parseShare(hash){
+  try{
+    const m=/^#share=([A-Za-z0-9_-]{4,20000})$/.exec(hash||"");if(!m)return null;
+    const d=JSON.parse(b64ud(m[1]));if(!d||d.v!==1||!Array.isArray(d.p))return null;
+    const list=d.p.slice(0,SHARE_MAX).map(r=>{
+      if(!Array.isArray(r))return null;
+      const t=[...new Set(String(r[2]||"").split(""))].filter(x=>THEMES.some(th=>th.id===x));
+      if(!t.length||!AREAS.some(a=>a.name===r[1]))return null;
+      const name=str(r[0],24).trim();if(!name)return null;
+      return {name,area:r[1],t,walk:int(r[3],1,3,1),dur:int(r[4],1,3,1),cost:int(r[5],0,3,1),kid:!!r[6],note:str(r[7],60),season:SEASON_RE.test(r[8]||"")?r[8]:""};
+    }).filter(Boolean);
+    return list.length?{from:str(d.f,12).trim(),list}:{from:"",list:[],bad:true};
+  }catch(e){return {from:"",list:[],bad:true}}
+}
+const dupOf=x=>allPlaces().find(p=>!p.hidden&&p.name===x.name&&p.area===x.area);
+function renderIncoming(){
+  $("inSec").hidden=!incoming;if(!incoming)return;
+  if(incoming.bad){$("inTitle").textContent="這個分享連結打不開";$("inLead").textContent="連結可能沒有複製完整。請對方重新傳一次。";$("inList").innerHTML="";$("inAdd").hidden=true;return}
+  $("inAdd").hidden=false;
+  const L=incoming.list;
+  $("inTitle").textContent=`${incoming.from?incoming.from+" ":"朋友"}分享了 ${L.length} 個景點給你`;
+  $("inLead").textContent="勾選想要的景點，按下面的按鈕就會加進你的景點庫，原本的資料都不會被改動。";
+  $("inList").innerHTML=L.map((x,i)=>{const d=dupOf(x);return `<li><label class="check"><input type="checkbox" data-in="${i}" ${d?"disabled":(x.sel!==false?"checked":"")}> <span><b>${esc(x.name)}</b><span class="help">　${esc(x.area)}・${x.t.map(y=>TH(y).name).join("、")}${d?"・你已經有了":""}</span>${x.note?`<br><span class="help">${esc(x.note)}</span>`:""}</span></label></li>`}).join("");
+  const n=L.filter((x,i)=>!dupOf(x)&&x.sel!==false).length;
+  $("inAdd").disabled=!n;$("inAddT").textContent=n?`加入 ${n} 個景點到我的景點庫`:"沒有可以加入的新景點";
+}
+$("inList").addEventListener("change",e=>{const c=e.target.closest("[data-in]");if(!c)return;incoming.list[+c.dataset.in].sel=c.checked;renderIncoming()});
+$("inCancel").onclick=()=>{incoming=null;renderIncoming();$("h-spots").focus()};
+$("inAdd").onclick=()=>{
+  if(!incoming)return;const sn=snapshot();
+  const add=incoming.list.filter(x=>x.sel!==false&&!dupOf(x));
+  const room=200-S.custom.length;const ok=add.slice(0,Math.max(0,room));
+  ok.forEach(x=>{const {sel,...c}=x;S.custom.push({id:uid("u"),...c,fl:"",shared:true,from:incoming.from})});
+  incoming=null;save();renderIncoming();spotF="shared";renderSpots();renderHead();shareSel=null;renderShare();
+  toast(ok.length<add.length?`已加入 ${ok.length} 個景點（自訂景點最多 200 個，其餘沒有加入）。`:`已加入 ${ok.length} 個景點，抽籤時也會抽到。`,{action:"復原",onAction:()=>restore(sn,"已取消加入。"),ms:8000});
+  $("h-spots").focus();
+};
+function takeShareHash(){
+  const h=(()=>{try{return location.hash}catch(e){return ""}})();
+  if(!/^#share=/.test(h||""))return false;
+  incoming=parseShare(h);
+  try{history.replaceState(null,"","#spots")}catch(e){}
+  return true;
+}
+
 /* ---------- 導覽（含網址、返回鍵、捲動位置記憶） ---------- */
 const TABS=["draw","spots","trips","set"];
 const scrollMem={};
@@ -733,7 +808,7 @@ function showTab(t,opts){
 function go(t){showTab(t,{push:true,focus:true})}
 function fromHash(){try{const h=(location.hash||"").slice(1);return TABS.includes(h)?h:null}catch(e){return null}}
 window.addEventListener("popstate",()=>{const t=fromHash()||"draw";if(t!==S.tab)showTab(t,{focus:true})});
-window.addEventListener("hashchange",()=>{const t=fromHash();if(t&&t!==S.tab)showTab(t,{focus:true})});
+window.addEventListener("hashchange",()=>{if(takeShareHash()){showTab("spots",{focus:true});renderIncoming();return}const t=fromHash();if(t&&t!==S.tab)showTab(t,{focus:true})});
 document.querySelectorAll(".nav [data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderNews(){
   const show=S.seenData!==DATA.dataVersion&&!!LATEST.summary;$("newsCard").hidden=!show;if(!show)return;
@@ -745,6 +820,6 @@ $("newsOk").onclick=()=>{S.seenData=DATA.dataVersion;save();renderNews();$("draw
 renderNews();
 if(OFFLINE)toast(`目前連不上網路，先使用上次下載的景點資料（${DATA.dataVersion}）。`,{ms:6000});
 initSpotsForm();endEdit();
-{const start=fromHash()||S.tab||"draw";S.tab=null;showTab(start);try{history.replaceState(null,"","#"+S.tab)}catch(e){}}
+{const sharedIn=takeShareHash();const start=sharedIn?"spots":(fromHash()||S.tab||"draw");S.tab=null;showTab(start);try{history.replaceState(null,"","#"+S.tab)}catch(e){}if(sharedIn){renderIncoming();const h=$("inTitle");if(h&&h.focus)h.focus()}}
 }
 })();
