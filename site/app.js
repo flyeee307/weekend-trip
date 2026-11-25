@@ -643,19 +643,74 @@ $("placeForm").addEventListener("submit",e=>{
 const b64e=s=>btoa(unescape(encodeURIComponent(s)));const b64d=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,""))));
 $("exportBtn").onclick=()=>{const code="TRIP1:"+b64e(JSON.stringify({set:S.set,custom:S.custom,visited:S.visited,trips:S.trips,marks:S.marks,hidden:S.hidden,edits:S.edits}));copyText(code,()=>toast("已複製備份碼，請貼到安全的地方保存。"),()=>{$("importBox").value=code;$("importBox").focus();$("importBox").select();toast("無法自動複製，備份碼已放進下方框框並選取好了。")})};
 let impArmed=false,impTimer=null;
-const IMP_T="匯入並取代目前資料";
+const IMP_T="整份取代";
 $("importBox").addEventListener("input",()=>setErr("importBox","importErr",""));
-$("importBtn").onclick=()=>{
+function readCode(){
   const raw=$("importBox").value.trim();let d=null;
   try{if(!raw.startsWith("TRIP1:"))throw 0;d=JSON.parse(b64d(raw.slice(6)));if(!d||!d.set||!Array.isArray(d.trips))throw 0}
-  catch(e){setErr("importBox","importErr",raw?"這不是小旅行籤的備份碼。備份碼要以 TRIP1: 開頭，請確認有完整貼上。":"請先把備份碼貼進上面的框框。");$("importBox").focus();return}
-  setErr("importBox","importErr","");
-  if(!impArmed){impArmed=true;$("importT").textContent="再按一次，確認取代";clearTimeout(impTimer);impTimer=setTimeout(()=>{impArmed=false;$("importT").textContent=IMP_T},5000);toast("匯入會取代這台裝置目前的成員、景點庫和旅行紀錄。確定的話請再按一次。");return}
+  catch(e){setErr("importBox","importErr",raw?"這不是小旅行籤的備份碼。備份碼要以 TRIP1: 開頭，請確認有完整貼上。":"請先把備份碼貼進上面的框框。");$("importBox").focus();return null}
+  setErr("importBox","importErr","");return d;
+}
+/* 合併規則：兩邊都有的項目以「這台裝置」為準；備份碼裡多出來的才加進來 */
+function mergeData(cur,imp){
+  const n={tripUpd:0,trips:0,custom:0,marks:0,visited:0,members:0,edits:0,hidden:0};
+  // 成員：同 id 視為同一人；同名也視為同一人
+  const members=[...cur.set.members];const memMap={};
+  imp.set.members.forEach(m=>{
+    const hit=members.find(x=>x.id===m.id)||members.find(x=>x.name===m.name);
+    if(hit){memMap[m.id]=hit.id;return}
+    if(members.length>=8)return;
+    let id=m.id;while(members.some(x=>x.id===id))id=uid("m");
+    members.push({...m,id});memMap[m.id]=id;n.members++;
+  });
+  // 自訂景點：同 id，或同名同區域，視為同一個
+  const custom=[...cur.custom];const placeMap={};
+  imp.custom.forEach(c=>{
+    const hit=custom.find(x=>x.id===c.id)||custom.find(x=>x.name===c.name&&x.area===c.area);
+    if(hit){placeMap[c.id]=hit.id;return}
+    if(custom.length>=200)return;
+    custom.push(c);placeMap[c.id]=c.id;n.custom++;
+  });
+  const pid=id=>id==null?id:(placeMap[id]||id);
+  const visited=[...cur.visited];imp.visited.map(pid).forEach(id=>{if(!visited.includes(id)){visited.push(id);n.visited++}});
+  const marks={...cur.marks};
+  Object.entries(imp.marks).forEach(([k,v])=>{k=pid(k);const o=marks[k]||{};const m={...(o.s||v.s?{s:true}:{}),...(o.h||v.h?{h:true}:{})};if(JSON.stringify(m)!==JSON.stringify(o)){marks[k]=m;n.marks++}});
+  const hidden=[...cur.hidden];imp.hidden.forEach(id=>{if(!hidden.includes(id)){hidden.push(id);n.hidden++}});
+  const edits={...cur.edits};Object.entries(imp.edits).forEach(([k,e])=>{if(!edits[k]){edits[k]=e;n.edits++}});
+  // 旅行紀錄：同 id，或同日期同主要景點，視為同一趟；兩邊的評分合在一起
+  const trips=cur.trips.map(t=>({...t,ratings:{...t.ratings},tags:[...t.tags]}));
+  imp.trips.forEach(t0=>{
+    const t={...t0,main:pid(t0.main),side:pid(t0.side),rain:pid(t0.rain),ratings:Object.fromEntries(Object.entries(t0.ratings).map(([k,v])=>[memMap[k]||k,v]))};
+    const hit=trips.find(x=>x.id===t.id)||trips.find(x=>x.date&&x.date===t.date&&x.main===t.main);
+    if(!hit){trips.push(t);n.trips++;return}
+    const before=JSON.stringify(hit);
+    Object.entries(t.ratings).forEach(([k,v])=>{if(!hit.ratings[k])hit.ratings[k]=v});
+    t.tags.forEach(x=>{if(!hit.tags.includes(x))hit.tags.push(x)});
+    if(!hit.note&&t.note)hit.note=t.note;
+    if(t.status==="done"||Object.keys(hit.ratings).length)hit.status="done";
+    if(JSON.stringify(hit)!==before)n.tripUpd++;
+  });
+  trips.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  return {data:{set:{...cur.set,members},custom,visited,trips,marks,hidden,edits},n};
+}
+$("mergeBtn").onclick=()=>{
+  const d=readCode();if(!d)return;
+  const sn=snapshot();
+  const cur=cleanData(S),imp=cleanData(d);
+  const {data,n}=mergeData(cur,imp);
+  Object.assign(S,cleanData(data));cleanState();save();renderSet();renderHead();$("importBox").value="";
+  const parts=[[n.trips,"趟旅行"],[n.custom,"個自訂景點"],[n.marks,"個收藏"],[n.visited,"個去過的地方"],[n.members,"位成員"],[n.edits,"筆景點修改"],[n.hidden,"個刪除的景點"]].filter(x=>x[0]).map(x=>x[0]+" "+x[1]);
+  const upd=n.tripUpd?`補上了 ${n.tripUpd} 趟旅行的評分或心得`:"";
+  toast(parts.length||upd?`合併完成，${[parts.length?"加入了 "+parts.join("、"):"",upd].filter(Boolean).join("，")}。`:"合併完成。備份碼裡的內容這台裝置都已經有了。",{action:"復原",onAction:()=>restore(sn,"已復原成合併前的資料。"),ms:8000});
+};
+$("importBtn").onclick=()=>{
+  const d=readCode();if(!d)return;
+  if(!impArmed){impArmed=true;$("importT").textContent="再按一次，確認取代";clearTimeout(impTimer);impTimer=setTimeout(()=>{impArmed=false;$("importT").textContent=IMP_T},5000);toast("整份取代會刪掉這台裝置目前的成員、景點庫和旅行紀錄，改成備份碼的內容。確定的話請再按一次。");return}
   impArmed=false;clearTimeout(impTimer);$("importT").textContent=IMP_T;
   const sn=snapshot();
   Object.assign(S,cleanData(d));S.vote={cands:[],votes:{}};
   S.main=null;cleanState();save();renderSet();renderHead();$("importBox").value="";
-  toast("匯入完成。",{action:"復原",onAction:()=>restore(sn,"已復原成匯入前的資料。")});
+  toast("已整份取代成備份碼的資料。",{action:"復原",onAction:()=>restore(sn,"已復原成匯入前的資料。")});
 };
 
 /* ---------- 導覽（含網址、返回鍵、捲動位置記憶） ---------- */

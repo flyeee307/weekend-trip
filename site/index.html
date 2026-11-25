@@ -557,12 +557,12 @@ textarea.code{min-height:96px;font-family:var(--font-mono);font-size:var(--fs-1)
       <p class="notice"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span>資料只存在這個瀏覽器裡。iPhone 的 Safari 如果超過 7 天沒打開這個網站，資料可能會被系統清掉。建議把網站「加入主畫面」，或每次出遊後複製一次備份碼。</span></p>
       <div class="row"><button type="button" class="btn btn-primary" id="exportBtn"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>複製備份碼</button></div>
       <div class="field">
-        <label class="label" for="importBox">從備份碼還原</label>
+        <label class="label" for="importBox">貼上另一台裝置的備份碼</label>
         <textarea class="code" id="importBox" spellcheck="false" aria-describedby="importHelp importErr"></textarea>
-        <p class="help" id="importHelp">貼上以 TRIP1: 開頭的備份碼。匯入會取代這台裝置目前的資料，匯入後幾秒內可以按「復原」。</p>
+        <p class="help" id="importHelp">貼上以 TRIP1: 開頭的備份碼，再選一種方式。<b>合併</b>：保留這台裝置的資料，再加上備份碼裡多出來的旅行紀錄、自訂景點、收藏和去過紀錄，兩邊都有的以這台裝置為準。<b>整份取代</b>：改成和備份碼完全一樣。兩種做完後幾秒內都可以按「復原」。</p>
         <p class="err" id="importErr" role="alert"></p>
       </div>
-      <div class="row"><button type="button" class="btn btn-danger" id="importBtn"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span id="importT">匯入並取代目前資料</span></button></div>
+      <div class="row"><button type="button" class="btn btn-secondary" id="mergeBtn"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>合併到目前資料</button><button type="button" class="btn btn-danger" id="importBtn"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span id="importT">整份取代</span></button></div>
     </section>
   </div>
 
